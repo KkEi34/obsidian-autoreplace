@@ -50,13 +50,15 @@ export default class MyPlugin extends Plugin {
 		const mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (mdView && mdView.getViewData()) {
 			const text = mdView.getViewData();
-			const result = this.replaceInputString(text)
+			const [result, count] = this.replaceInputString(text)
 			mdView.setViewData(result, false);
+			new Notice(`Autoreplace: ${count} items replaced.`);
 		}
 	}
 
-	replaceInputString(text: string): string {
+	replaceInputString(text: string): [string, number] {
 		let targetText = text;
+		let count = 0;
 		this.settings.patterns.forEach(e => {
 			let idx = 0;
 			while((idx = targetText.indexOf(e.source, idx)) >=0){
@@ -64,10 +66,11 @@ export default class MyPlugin extends Plugin {
 				const end = targetText.substring(idx + e.source.length);
 				targetText = start + e.replacement + end;
 				idx += e.source.length;
+				count++;
 			}
 			// targetText = targetText.replace(new RegExp(e.source, 'g'), e.replacement);
 		});
-		return targetText;
+		return [targetText, count];
 	}
 }
 
