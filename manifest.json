@@ -1,0 +1,10 @@
+{
+	"id": "obsidian-autoreplace-plugin",
+	"name": "Autoreplace",
+	"version": "0.1.0",
+	"minAppVersion": "0.15.0",
+	"description": "Autoreplace text",
+	"author": "Obsidian",
+	"authorUrl": "https://github.com/KkEi34/obsidian-autoreplace",
+	"isDesktopOnly": false
+}
