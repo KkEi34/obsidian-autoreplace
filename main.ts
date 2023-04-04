@@ -27,7 +27,7 @@ export default class MyPlugin extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on("file-open", this.replaceContent)
 		)
-		
+
 		// this.registerEvent(
 		// 	this.app.workspace.on("editor-change", debounce(this.replaceContent, 1000))
 		// )
@@ -51,8 +51,10 @@ export default class MyPlugin extends Plugin {
 		if (mdView && mdView.getViewData()) {
 			const text = mdView.getViewData();
 			const [result, count] = this.replaceInputString(text)
-			mdView.setViewData(result, false);
-			new Notice(`Autoreplace: ${count} items replaced.`);
+			if (count) {
+				mdView.setViewData(result, false);
+				new Notice(`Autoreplace: ${count} items replaced.`);
+			}
 		}
 	}
 
@@ -61,7 +63,7 @@ export default class MyPlugin extends Plugin {
 		let count = 0;
 		this.settings.patterns.forEach(e => {
 			let idx = 0;
-			while((idx = targetText.indexOf(e.source, idx)) >=0){
+			while ((idx = targetText.indexOf(e.source, idx)) >= 0) {
 				const start = targetText.substring(0, idx);
 				const end = targetText.substring(idx + e.source.length);
 				targetText = start + e.replacement + end;
