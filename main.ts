@@ -1,15 +1,15 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, debounce, WorkspaceWindow, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
 
 // Remember to rename these classes and interfaces!
 
 interface MyPluginSettings {
 	mySetting: string;
-	patterns: [{source: string, replacement: string}];
+	patterns: [{ source: string, replacement: string }];
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
 	mySetting: 'default',
-	patterns: [{source: '', replacement: ''}],
+	patterns: [{ source: '', replacement: '' }],
 }
 
 export default class MyPlugin extends Plugin {
@@ -23,7 +23,16 @@ export default class MyPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		//this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+
+		this.registerEvent(
+			this.app.workspace.on("file-open", this.replaceContent)
+		)
+		
+		// this.registerEvent(
+		// 	this.app.workspace.on("editor-change", debounce(this.replaceContent, 1000))
+		// )
 	}
+
 
 	onunload() {
 
@@ -35,6 +44,30 @@ export default class MyPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	replaceContent = () => {
+		const mdView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (mdView && mdView.getViewData()) {
+			const text = mdView.getViewData();
+			const result = this.replaceInputString(text)
+			mdView.setViewData(result, false);
+		}
+	}
+
+	replaceInputString(text: string): string {
+		let targetText = text;
+		this.settings.patterns.forEach(e => {
+			let idx = 0;
+			while((idx = targetText.indexOf(e.source, idx)) >=0){
+				const start = targetText.substring(0, idx);
+				const end = targetText.substring(idx + e.source.length);
+				targetText = start + e.replacement + end;
+				idx += e.source.length;
+			}
+			// targetText = targetText.replace(new RegExp(e.source, 'g'), e.replacement);
+		});
+		return targetText;
 	}
 }
 
@@ -51,31 +84,31 @@ class AutreplaceSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Autreplace settings.'});
+		containerEl.createEl('h2', { text: 'Autreplace settings.' });
 
 		this.plugin.settings.patterns.forEach((pattern, index) => {
 			const data = { ...pattern };
 			const setting = this.makePatternRow(containerEl, `#${index}`, data)
-			.addButton((button) => {
-				button.setButtonText("Save").onClick(async (evt) => {
-					this.plugin.settings.patterns[index] = data;
-					await this.plugin.saveSettings();
-					this.refresh();
-				})
-			}).addButton((button) => {
-				button.setButtonText("Remove").setClass("settings-delete-btn")
-				.onClick(async (evt) => {
-					this.plugin.settings.patterns.splice(index, 1);
-					await this.plugin.saveSettings();
-					this.refresh();
+				.addButton((button) => {
+					button.setButtonText("Save").onClick(async (evt) => {
+						this.plugin.settings.patterns[index] = data;
+						await this.plugin.saveSettings();
+						this.refresh();
+					})
+				}).addButton((button) => {
+					button.setButtonText("Remove").setClass("settings-delete-btn")
+						.onClick(async (evt) => {
+							this.plugin.settings.patterns.splice(index, 1);
+							await this.plugin.saveSettings();
+							this.refresh();
+						});
 				});
-			});
 		});
-		const data = {source: '', replacement: ''};
+		const data = { source: '', replacement: '' };
 		const setting = this.makePatternRow(containerEl, "New", data).addButton((button) => {
 			button.setButtonText("Add").onClick(async (evt) => {
 				if (!(data.source && data.replacement) || setting.controlEl.querySelector('.autoreplace-setting-error')) {
@@ -88,7 +121,7 @@ class AutreplaceSettingTab extends PluginSettingTab {
 		});
 	}
 
-	makePatternRow(containerEl: HTMLElement, label: string, data: {source: string, replacement: string}): Setting {
+	makePatternRow(containerEl: HTMLElement, label: string, data: { source: string, replacement: string }): Setting {
 		const rowClass = 'autoreplace-setting-section';
 		const setting = new Setting(containerEl).setClass(rowClass);
 
